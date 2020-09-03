@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: klusterlet-addon-lease-controller
+spec:
+  template:
+    spec:
+      containers:
+        - name: klusterlet-addon-lease-controller
+          imagePullPolicy: IfNotPresent
+          command: 
+          - klusterlet-addon-lease-controller
+          args:
+          - -lease-name 
+          - addon-lease
+          - -lease-namespace 
+          - open-cluster-management-self-import
+          - -hub-kubeconfig-secret
+          - brol
+          - -lease-duration
+          - "60"
+          - -startup-delay
+          - "10"
+          env:
+          - name: WATCH_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace
+          - name: POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                apiVersion: v1
+                fieldPath: metadata.namespace

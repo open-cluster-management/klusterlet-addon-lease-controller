@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: open-cluster-management-agent-addon
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: open-cluster-management-self-import
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: klusterlet-addon-lease-controller
+  labels:
+    control-plane: klusterlet-addon-lease-controller
+spec:
+  selector:
+    matchLabels:
+      control-plane: klusterlet-addon-lease-controller
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        control-plane: klusterlet-addon-lease-controller
+    spec:
+      serviceAccountName: klusterlet-addon-lease-controller
+      containers:
+        - name: klusterlet-addon-lease-controller
+          image: REPLACE_IMAGE
+          imagePullPolicy: IfNotPresent
+          command: 
+          - klusterlet-addon-lease-controller
+          args:
+          - -lease-name 
+          - REPLACE_LEASE_NAME 
+          - -lease-namespace 
+          - REPLACE_LEASE_NAMESPACE
+          - -hub-kubeconfig-secret
+          - REPLACE_HUB_KUBECONFIG
+          - -lease-duration
+          - REPLACE_LEASE_DURATION_SECONDS
+          - -startup-delay
+          - REPLACE_STARTUP_DELAY
+          env:
+            - name: WATCH_NAMESPACE
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
