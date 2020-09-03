@@ -13,10 +13,10 @@ The controller binary has the following parameters
           - -lease-namespace # The namespace where the lease must be created on the hub 
           - open-cluster-management-self-import
           - -hub-kubeconfig-secret # the secret on the managed-cluster containing the hub kubeconfig for the specific addon. The namespace is defined by the env var $WATCH_NAMESPACE
-          - brol
+          - my-addon-hub-kubeconfig-secret
           - -lease-duration # The lease duration in secondes, default 60 sec
           - "60"
-          - -startup-delay # The delay to start the controller.
+          - -startup-delay # The delay to start the controller, default 10 sec.
           - "10"
           env:
           - name: WATCH_NAMESPACE # The namespace to monitor the hub the hub-kubeconfig-secret
@@ -35,4 +35,17 @@ The controller binary has the following parameters
                 fieldPath: metadata.namespace
 ```
 
+## ServiceAccount and Role
 
+The serviceaccount used on the hub (which is identify by the token in the provided secret `-hub-kubeconfig-secret` parameter) must have at least the verbs: get, update, create for the `leases.coordination.k8s.io`
+
+```
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - update
+  - create
+```
