@@ -9,18 +9,17 @@ spec:
         - name: klusterlet-addon-lease-controller
           imagePullPolicy: IfNotPresent
           command: 
-          - klusterlet-addon-lease-controller
           args:
           - -lease-name 
           - addon-lease
           - -lease-namespace 
           - open-cluster-management-self-import
           - -hub-kubeconfig-secret
-          - brol
+          - hub-config-secret
           - -lease-duration
-          - "60"
+          - "5"
           - -startup-delay
-          - "10"
+          - "2"
           env:
           - name: WATCH_NAMESPACE
             valueFrom:

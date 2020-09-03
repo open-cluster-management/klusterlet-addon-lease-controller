@@ -7,7 +7,7 @@ set -e
 #set -x
 
 CURR_FOLDER_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-KIND_KUBECONFIG="${CURR_FOLDER_PATH}/../kind_kubeconfig.yaml"
+KIND_KUBECONFIG="${CURR_FOLDER_PATH}/../test/functional/kind_kubeconfig.yaml"
 export KUBECONFIG=${KIND_KUBECONFIG}
 export DOCKER_IMAGE_AND_TAG=${1}
 
@@ -23,6 +23,7 @@ fi
 
 export FUNCT_TEST_TMPDIR="${CURR_FOLDER_PATH}/../test/functional/tmp"
 export FUNCT_TEST_COVERAGE="${CURR_FOLDER_PATH}/../test/functional/coverage"
+export HUB_KUBECONFIG_DIR="${CURR_FOLDER_PATH}/../test/functional/hub-kind-kubeconfig"
 
 if ! which kubectl > /dev/null; then
     echo "installing kubectl"
@@ -55,7 +56,11 @@ echo "setting up test coverage folder"
 [ -d "$FUNCT_TEST_COVERAGE" ] && rm -r "$FUNCT_TEST_COVERAGE"
 mkdir -p "${FUNCT_TEST_COVERAGE}"
 
-echo "generating kind configfile"
+echo "setting up test kubeconfig folder"
+[ -d "$HUB_KUBECONFIG_DIR" ] && rm -r "$HUB_KUBECONFIG_DIR"
+mkdir -p "${HUB_KUBECONFIG_DIR}"
+
+echo "generating managed-cluster kind configfile"
 cat << EOF > "${FUNCT_TEST_TMPDIR}/kind-config/kind-config.yaml"
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -66,11 +71,45 @@ nodes:
     containerPath: /tmp/coverage
 EOF
 
-echo "creating cluster"
+echo "generating hub cluster kind configfile"
+cat << EOF > "${FUNCT_TEST_TMPDIR}/kind-config/hub-kind-config.yaml"
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  apiServerPort: 6443
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration #for worker use JoinConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        system-reserved: memory=2Gi
+EOF
+
+
+echo "creating hub cluster"
+kind create cluster --name functional-test-hub --config "${FUNCT_TEST_TMPDIR}/kind-config/hub-kind-config.yaml"
+
+# setup kubeconfig
+kind get kubeconfig --name functional-test-hub > ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
+
+#replace the 127.0.0.1 by Host IP
+os=$(uname)
+if [[ "$os" = Darwin ]]; then
+  ip=$(ipconfig getifaddr en0)
+  sed -i '.bak' "s/127.0.0.1/$ip/g" ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
+else
+  ip=$(hostname -I)
+  sed -i "s/127.0.0.1/$ip/g" ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
+fi
+
+echo "creating managed cluster"
 kind create cluster --name functional-test --config "${FUNCT_TEST_TMPDIR}/kind-config/kind-config.yaml"
 
 # setup kubeconfig
 kind get kubeconfig --name functional-test > ${KIND_KUBECONFIG}
+cp ${KIND_KUBECONFIG} ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
 
 # load image if possible
 kind load docker-image ${DOCKER_IMAGE_AND_TAG} --name=functional-test -v 99 || echo "failed to load image locally, will use imagePullSecret"
@@ -103,8 +142,11 @@ for dir in overlays/test/* ; do
 
 done;
 
-echo "delete cluster"
+echo "delete managed cluster"
 kind delete cluster --name functional-test
+
+echo "delete hub cluster"
+kind delete cluster --name functional-test-hub
 
 if [ `find $FUNCT_TEST_COVERAGE -prune -empty 2>/dev/null` ]; then
   echo "no coverage files found. skipping"

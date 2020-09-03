@@ -58,6 +58,7 @@ test/e2e/resources/options.yaml
 
 # test outputs
 test/functional/tmp
+test/functional/hub-kind-kubeconfig
 test/functional/coverage
 kind_kubeconfig.yaml
 

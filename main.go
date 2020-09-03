@@ -43,14 +43,15 @@ func init() {
 	utilruntime.Must(corev1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 
+	//The flag must be set here because the main_test.go used in the `go test` set also some parameters
+	//and so these paramters are not registered if set in the main as the `go test` make a parse before
+	//they are created.
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&leaseName, "lease-name", "", "The lease name")
 	flag.StringVar(&leaseNamespace, "lease-namespace", "", "The lease namespace")
 	flag.StringVar(&hubConfigSecretName, "hub-kubeconfig-secret", "", "The lease namespace")
 	flag.IntVar(&leaseDurationSeconds, "lease-duration", 60, "The lease duration in seconds, default 60 sec.")
 	flag.IntVar(&startupDelay, "startup-delay", 10, "The startup delay in seconds, default 10 sec.")
-	flag.Parse()
-
 }
 
 func printVersion() {
@@ -75,6 +76,8 @@ var leaseDurationSeconds int
 var startupDelay int
 
 func main() {
+	//The parse is set here in case we don't use the `go test`
+	flag.Parse()
 	var enableLeaderElection bool
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
