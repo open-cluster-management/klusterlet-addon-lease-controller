@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	leaseName        = "addon"
+	leaseName        = "addon-lease"
 	hubKubeConfig    = "hub-kind-kubeconfig/hub_kind_kubeconfig.yaml"
 	clusterNamespace = "open-cluster-management-self-import"
 	addonNamespace   = "open-cluster-management-agent-addon"
@@ -71,9 +71,9 @@ func setupManagedCluster() {
 
 func setupHub() {
 	var err error
-	clientHub, err = libgoclient.NewDefaultKubeClient(hubKubeConfig)
+	clientHub, err = libgoclient.NewDefaultKubeClient("")
 	Expect(err).To(BeNil())
-	clientHubDynamic, err = libgoclient.NewDefaultKubeClientDynamic(hubKubeConfig)
+	clientHubDynamic, err = libgoclient.NewDefaultKubeClientDynamic("")
 	Expect(err).To(BeNil())
 
 	//Create ns

@@ -64,6 +64,8 @@ echo "generating managed-cluster kind configfile"
 cat << EOF > "${FUNCT_TEST_TMPDIR}/kind-config/kind-config.yaml"
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  apiServerPort: 6443
 nodes:
 - role: control-plane
   extraMounts:
@@ -88,28 +90,21 @@ nodes:
 EOF
 
 
-echo "creating hub cluster"
-kind create cluster --name functional-test-hub --config "${FUNCT_TEST_TMPDIR}/kind-config/hub-kind-config.yaml"
-
-# setup kubeconfig
-kind get kubeconfig --name functional-test-hub > ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
-
-#replace the 127.0.0.1 by Host IP
-os=$(uname)
-if [[ "$os" = Darwin ]]; then
-  ip=$(ipconfig getifaddr en0)
-  sed -i '.bak' "s/127.0.0.1/$ip/g" ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
-else
-  ip=$(hostname -I)
-  sed -i "s/127.0.0.1/$ip/g" ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
-fi
-
 echo "creating managed cluster"
 kind create cluster --name functional-test --config "${FUNCT_TEST_TMPDIR}/kind-config/kind-config.yaml"
 
 # setup kubeconfig
 kind get kubeconfig --name functional-test > ${KIND_KUBECONFIG}
 cp ${KIND_KUBECONFIG} ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
+#replace the 127.0.0.1 by Host IP
+os=$(uname)
+if [[ "$os" = Darwin ]]; then
+  # ip=$(ipconfig getifaddr en0)
+  sed -i '.bak' "s/127.0.0.1:6443/kubernetes.default.svc:443/g" ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
+else
+  # ip=$(hostname -I)
+  sed -i "s/127.0.0.1:6443/kubernetes.default.svc:443/g" ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
+fi
 
 # load image if possible
 kind load docker-image ${DOCKER_IMAGE_AND_TAG} --name=functional-test -v 99 || echo "failed to load image locally, will use imagePullSecret"

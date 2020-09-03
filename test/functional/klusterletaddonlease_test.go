@@ -27,7 +27,7 @@ var _ = Describe("Lease", func() {
 	})
 
 	It("Create Lease", func() {
-		Skip("Skip have to fix")
+		// Skip("Skip have to fix")
 		By("Creating the secret", func() {
 			b, err := ioutil.ReadFile(filepath.Clean(hubKubeConfig))
 			//Create secret
