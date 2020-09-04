@@ -180,7 +180,7 @@ func BuildKubeClientWithSecret(secret *corev1.Secret) (kubernetes.Interface, err
 	defer os.RemoveAll(tempdir)
 
 	for key, data := range secret.Data {
-		if err := ioutil.WriteFile(path.Join(tempdir, key), data, 0644); err != nil {
+		if err := ioutil.WriteFile(path.Join(tempdir, key), data, 0600); err != nil {
 			return nil, err
 		}
 	}
