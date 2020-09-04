@@ -65,5 +65,9 @@ var _ = Describe("Lease", func() {
 				return l0.Spec.RenewTime != l1.Spec.RenewTime
 			}).Should(BeTrue())
 		})
+		By("Deleting the secret", func() {
+			err := clientManagedCluster.CoreV1().Secrets(addonNamespace).Delete(context.TODO(), "hub-config-secret", metav1.DeleteOptions{})
+			Expect(err).To(BeNil())
+		})
 	})
 })
