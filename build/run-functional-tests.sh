@@ -7,11 +7,17 @@ set -e
 #set -x
 
 CURR_FOLDER_PATH="$( cd "$(dirname "$0")" >/dev/null 2>&1 ; pwd -P )"
-KIND_KUBECONFIG="${CURR_FOLDER_PATH}/../test/functional/kind_kubeconfig.yaml"
-export KUBECONFIG=${KIND_KUBECONFIG}
+FUNCT_TEST_DIR="${CURR_FOLDER_PATH}/../test/functional"
+FUNCT_TEST_KINDCONFIG_DIR="${FUNCT_TEST_DIR}/kind"
+KUBECONFIG_DIR=${FUNCT_TEST_DIR}/kubeconfig
+
+MC_KUBECONFIG="${KUBECONFIG_DIR}/mc_kind_kubeconfig.yaml"
+MC_INTERNAL_KUBECONFIG="${KUBECONFIG_DIR}/mc_internal_kind_kubeconfig.yaml"
+export KUBECONFIG=${MC_KUBECONFIG}
+HUB_KUBECONFIG="${KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml"
+HUB_INTERNAL_KUBECONFIG="${KUBECONFIG_DIR}/hub_internal_kind_kubeconfig.yaml"
+
 export DOCKER_IMAGE_AND_TAG=${1}
-
-
 if [ -z $DOCKER_USER ]; then
    echo "DOCKER_USER is not defined!"
    exit 1
@@ -21,9 +27,7 @@ if [ -z $DOCKER_PASS ]; then
    exit 1
 fi
 
-export FUNCT_TEST_TMPDIR="${CURR_FOLDER_PATH}/../test/functional/tmp"
-export FUNCT_TEST_COVERAGE="${CURR_FOLDER_PATH}/../test/functional/coverage"
-export HUB_KUBECONFIG_DIR="${CURR_FOLDER_PATH}/../test/functional/hub-kind-kubeconfig"
+export FUNCT_TEST_COVERAGE="${FUNCT_TEST_DIR}/coverage"
 
 if ! which kubectl > /dev/null; then
     echo "installing kubectl"
@@ -46,65 +50,49 @@ if ! which gocovmerge > /dev/null; then
   go get -u github.com/wadey/gocovmerge
 fi
 
-echo "setting up test tmp folder"
-[ -d "$FUNCT_TEST_TMPDIR" ] && rm -r "$FUNCT_TEST_TMPDIR"
-mkdir -p "$FUNCT_TEST_TMPDIR"
-# mkdir -p "$FUNCT_TEST_TMPDIR/output"
-mkdir -p "$FUNCT_TEST_TMPDIR/kind-config"
-
 echo "setting up test coverage folder"
 [ -d "$FUNCT_TEST_COVERAGE" ] && rm -r "$FUNCT_TEST_COVERAGE"
 mkdir -p "${FUNCT_TEST_COVERAGE}"
 
-echo "setting up test kubeconfig folder"
-[ -d "$HUB_KUBECONFIG_DIR" ] && rm -r "$HUB_KUBECONFIG_DIR"
-mkdir -p "${HUB_KUBECONFIG_DIR}"
+echo "creating hub cluster"
+kind create cluster --name functional-test-hub --config "${FUNCT_TEST_KINDCONFIG_DIR}/hub-kind-config.yaml"
+
+kind get kubeconfig --name functional-test-hub > ${HUB_KUBECONFIG}
+
+# kubectl --kubeconfig ${HUB_KUBECONFIG} apply -f ${FUNCT_TEST_DIR}/hub_crds
+
+# kubectl --kubeconfig ${HUB_KUBECONFIG} apply -f ${FUNCT_TEST_DIR}/hub_crs
+
+kind get kubeconfig --name functional-test-hub --internal > ${HUB_INTERNAL_KUBECONFIG}
 
 echo "generating managed-cluster kind configfile"
-cat << EOF > "${FUNCT_TEST_TMPDIR}/kind-config/kind-config.yaml"
+cat << EOF > "${FUNCT_TEST_KINDCONFIG_DIR}/kind-config.yaml"
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  apiServerPort: 6443
 nodes:
 - role: control-plane
+  extraPortMappings:
+  - containerPort: 80
+    hostPort: 8080
+    listenAddress: "0.0.0.0"
+  - containerPort: 443
+    hostPort: 8443
+    listenAddress: "0.0.0.0"  
+  - containerPort: 6443
+    hostPort: 32807
+    listenAddress: "0.0.0.0"
   extraMounts:
   - hostPath: "${FUNCT_TEST_COVERAGE}"
     containerPath: /tmp/coverage
 EOF
 
-echo "generating hub cluster kind configfile"
-cat << EOF > "${FUNCT_TEST_TMPDIR}/kind-config/hub-kind-config.yaml"
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-networking:
-  apiServerPort: 6443
-nodes:
-- role: control-plane
-  kubeadmConfigPatches:
-  - |
-    kind: InitConfiguration #for worker use JoinConfiguration
-    nodeRegistration:
-      kubeletExtraArgs:
-        system-reserved: memory=2Gi
-EOF
-
-
 echo "creating managed cluster"
-kind create cluster --name functional-test --config "${FUNCT_TEST_TMPDIR}/kind-config/kind-config.yaml"
+kind create cluster --name functional-test --config "${FUNCT_TEST_KINDCONFIG_DIR}/kind-config.yaml"
 
 # setup kubeconfig
-kind get kubeconfig --name functional-test > ${KIND_KUBECONFIG}
-cp ${KIND_KUBECONFIG} ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
-#replace the 127.0.0.1 by Host IP
-os=$(uname)
-if [[ "$os" = Darwin ]]; then
-  # ip=$(ipconfig getifaddr en0)
-  sed -i '.bak' "s/127.0.0.1:6443/kubernetes.default.svc:443/g" ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
-else
-  # ip=$(hostname -I)
-  sed -i "s/127.0.0.1:6443/kubernetes.default.svc:443/g" ${HUB_KUBECONFIG_DIR}/hub_kind_kubeconfig.yaml
-fi
+kind get kubeconfig --name functional-test > ${MC_KUBECONFIG}
+
+kind get kubeconfig --name functional-test --internal > ${MC_INTERNAL_KUBECONFIG}
 
 # load image if possible
 kind load docker-image ${DOCKER_IMAGE_AND_TAG} --name=functional-test -v 99 || echo "failed to load image locally, will use imagePullSecret"
@@ -151,7 +139,7 @@ else
   # rm -rf "${FUNCT_TEST_COVERAGE}"
   # mkdir -p "${FUNCT_TEST_COVERAGE}"
 
-  # cp "$FUNCT_TEST_TMPDIR/output/"* "${FUNCT_TEST_COVERAGE}/"
+  # cp "$FUNCT_TEST_KINDCONFIG_DIR/output/"* "${FUNCT_TEST_COVERAGE}/"
   # ls -l "${FUNCT_TEST_COVERAGE}/"
 
   gocovmerge "${FUNCT_TEST_COVERAGE}/"* >> "${FUNCT_TEST_COVERAGE}/cover-functional.out"

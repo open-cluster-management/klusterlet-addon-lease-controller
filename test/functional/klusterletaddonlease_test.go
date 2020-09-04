@@ -29,7 +29,7 @@ var _ = Describe("Lease", func() {
 	It("Create Lease", func() {
 		// Skip("Skip have to fix")
 		By("Creating the secret", func() {
-			b, err := ioutil.ReadFile(filepath.Clean(hubKubeConfig))
+			b, err := ioutil.ReadFile(filepath.Clean(hubInternalKubeConfig))
 			//Create secret
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
