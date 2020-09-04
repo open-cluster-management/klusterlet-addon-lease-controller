@@ -29,10 +29,11 @@ import (
 )
 
 const (
-	leaseName        = "addon"
-	hubKubeConfig    = "hub-kind-kubeconfig/hub_kind_kubeconfig.yaml"
-	clusterNamespace = "open-cluster-management-self-import"
-	addonNamespace   = "open-cluster-management-agent-addon"
+	leaseName             = "addon-lease"
+	hubKubeConfig         = "kubeconfig/hub_kind_kubeconfig.yaml"
+	hubInternalKubeConfig = "kubeconfig/hub_internal_kind_kubeconfig.yaml"
+	clusterNamespace      = "open-cluster-management-self-import"
+	addonNamespace        = "open-cluster-management-agent-addon"
 )
 
 var (

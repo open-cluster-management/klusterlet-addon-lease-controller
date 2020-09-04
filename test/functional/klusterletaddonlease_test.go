@@ -27,9 +27,9 @@ var _ = Describe("Lease", func() {
 	})
 
 	It("Create Lease", func() {
-		Skip("Skip have to fix")
+		// Skip("Skip have to fix")
 		By("Creating the secret", func() {
-			b, err := ioutil.ReadFile(filepath.Clean(hubKubeConfig))
+			b, err := ioutil.ReadFile(filepath.Clean(hubInternalKubeConfig))
 			//Create secret
 			secret := &corev1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
@@ -64,6 +64,10 @@ var _ = Describe("Lease", func() {
 				}
 				return l0.Spec.RenewTime != l1.Spec.RenewTime
 			}).Should(BeTrue())
+		})
+		By("Deleting the secret", func() {
+			err := clientManagedCluster.CoreV1().Secrets(addonNamespace).Delete(context.TODO(), "hub-config-secret", metav1.DeleteOptions{})
+			Expect(err).To(BeNil())
 		})
 	})
 })

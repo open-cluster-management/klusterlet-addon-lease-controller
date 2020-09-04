@@ -6,32 +6,42 @@ spec:
   template:
     spec:
       containers:
-        - name: klusterlet-addon-lease-controller
-          imagePullPolicy: IfNotPresent
-          command: 
-          args:
-          - -lease-name 
-          - addon-lease
-          - -lease-namespace 
-          - open-cluster-management-self-import
-          - -hub-kubeconfig-secret
-          - hub-config-secret
-          - -lease-duration
-          - "5"
-          - -startup-delay
-          - "2"
-          env:
-          - name: WATCH_NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
-          - name: POD_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: metadata.name
-          - name: POD_NAMESPACE
-            valueFrom:
-              fieldRef:
-                apiVersion: v1
-                fieldPath: metadata.namespace
+      - name: klusterlet-addon-lease-controller
+        imagePullPolicy: IfNotPresent
+        volumeMounts:
+          - mountPath: /tmp/coverage
+            name: coverage-dir  
+        command: 
+        args:
+        - -lease-name 
+        - addon-lease
+        - -lease-namespace 
+        - open-cluster-management-self-import
+        - -hub-kubeconfig-secret
+        - hub-config-secret
+        - -lease-duration
+        - "5"
+        - -startup-delay
+        - "2"
+        env:
+        - name: WATCH_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+      volumes:
+        - name: coverage-dir
+          hostPath:
+            # directory location on host
+            path: /tmp/coverage
+            # this field is optional
+            type: Directory

@@ -48,7 +48,6 @@ gosec.json
 go-bindata.diff
 e2e.test
 results-*.xml
-test/e2e/resources/options.yaml
 
 
 # override build harness vendoring
@@ -56,9 +55,9 @@ test/e2e/resources/options.yaml
 !vbh/build-harness
 !vbh/build-harness-extensions
 
-# test outputs
-test/functional/tmp
-test/functional/hub-kind-kubeconfig
+# test files and directories
+test/functional/kubeconfig
+test/functional/kind/kind-config.yaml
 test/functional/coverage
-kind_kubeconfig.yaml
 
+test/e2e/resources/options.yaml
