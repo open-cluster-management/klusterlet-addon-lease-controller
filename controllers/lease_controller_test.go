@@ -537,7 +537,7 @@ func TestLeaseReconciler_Reconcile(t *testing.T) {
 				LeaseDurationSeconds:      1,
 				BuildKubeClientWithSecret: fakeBuikdBuildKubeClientWithSecret,
 			},
-			want:    ctrl.Result{Requeue: true, RequeueAfter: 10},
+			want:    ctrl.Result{Requeue: true, RequeueAfter: 10 * time.Second},
 			wantErr: false,
 		},
 	}

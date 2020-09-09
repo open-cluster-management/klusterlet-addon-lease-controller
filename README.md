@@ -49,3 +49,24 @@ The serviceaccount used on the hub (which is identify by the token in the provid
   - update
   - create
 ```
+
+# Build
+
+`make build`
+
+# run locally
+
+1. Set the environment variables, POD_NAME, POD_NAMESPACE and WATCH_NAMESPACE.
+2. Update the make file `run` target with the parameters like 
+`-lease-name addon-lease -lease-namespace open-cluster-management-self-import -hub-kubeconfig-secret appmgr-hub-kubeconfig`
+or launch
+`go run ./main.go -lease-name addon-lease -lease-namespace open-cluster-management-self-import -hub-kubeconfig-secret appmgr-hub-kubeconfig`
+
+# Unit tests
+
+`make test`
+
+# functional tests
+
+The functional tests will create 2 kind clusters, one for the hub and one for the managedcluster.
+`make functional-test-full`
