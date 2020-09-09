@@ -32,8 +32,6 @@ var (
 )
 
 var (
-	metricsHost             = "0.0.0.0"
-	metricsPort         int = 8384
 	operatorMetricsPort int = 8687
 )
 
@@ -46,7 +44,8 @@ func init() {
 	//The flag must be set here because the main_test.go used in the `go test` set also some parameters
 	//and so these paramters are not registered if set in the main as the `go test` make a parse before
 	//they are created.
-	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+	flag.StringVar(&metricsHost, "metrics-host", "0.0.0.0", "The host the metric endpoint binds to.")
+	flag.StringVar(&metricsPort, "metrics-port", "8384", "The address the metric endpoint binds to.")
 	flag.StringVar(&leaseName, "lease-name", "", "The lease name")
 	flag.StringVar(&leaseNamespace, "lease-namespace", "", "The lease namespace")
 	flag.StringVar(&hubConfigSecretName, "hub-kubeconfig-secret", "", "The lease namespace")
@@ -68,7 +67,8 @@ func printVersion() {
 	setupLog.Info(fmt.Sprintf("Component name/version: %s@%s", string(n), string(v)))
 }
 
-var metricsAddr string
+var metricsHost string
+var metricsPort string
 var leaseName string
 var leaseNamespace string
 var hubConfigSecretName string
@@ -100,10 +100,10 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		Namespace:          os.Getenv("WATCH_NAMESPACE"),
-		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+		MetricsBindAddress: fmt.Sprintf("%s:%s", metricsHost, metricsPort),
 		Port:               operatorMetricsPort,
 		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   "b678e38c.agent.open-cluster-management.io",
+		LeaderElectionID:   leaseName + "-addon-lease.agent.open-cluster-management.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
