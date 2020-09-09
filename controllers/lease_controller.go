@@ -79,7 +79,7 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return reconcile.Result{}, err
 			}
 			if !ready {
-				return reconcile.Result{Requeue: true, RequeueAfter: 10}, nil
+				return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
 			}
 		}
 	}
