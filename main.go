@@ -100,7 +100,7 @@ func main() {
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
 		Namespace:          os.Getenv("WATCH_NAMESPACE"),
-		MetricsBindAddress: fmt.Sprintf("%s:%d", metricsHost, metricsPort),
+		MetricsBindAddress: fmt.Sprintf("%s:%s", metricsHost, metricsPort),
 		Port:               operatorMetricsPort,
 		LeaderElection:     enableLeaderElection,
 		LeaderElectionID:   leaseName + "addon-lease.agent.open-cluster-management.io",
