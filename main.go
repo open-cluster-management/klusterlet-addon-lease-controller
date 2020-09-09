@@ -103,7 +103,7 @@ func main() {
 		MetricsBindAddress: fmt.Sprintf("%s:%s", metricsHost, metricsPort),
 		Port:               operatorMetricsPort,
 		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   leaseName + "addon-lease.agent.open-cluster-management.io",
+		LeaderElectionID:   leaseName + "-addon-lease.agent.open-cluster-management.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
