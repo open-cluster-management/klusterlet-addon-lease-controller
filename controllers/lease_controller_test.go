@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
-	"github.com/openshift/library-go/pkg/operator/events"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -342,7 +341,6 @@ func Test_leaseUpdater_stop(t *testing.T) {
 		namespace string
 		name      string
 		cancel    context.CancelFunc
-		recorder  events.Recorder
 	}
 	type args struct {
 		ctx context.Context
@@ -382,7 +380,6 @@ func Test_leaseUpdater_stop(t *testing.T) {
 				namespace: tt.fields.namespace,
 				name:      tt.fields.name,
 				cancel:    tt.fields.cancel,
-				recorder:  tt.fields.recorder,
 			}
 			u.stop(tt.args.ctx)
 			if u.cancel != nil {

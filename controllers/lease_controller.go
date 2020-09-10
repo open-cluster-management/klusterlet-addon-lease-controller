@@ -16,7 +16,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/go-logr/logr"
-	"github.com/openshift/library-go/pkg/operator/events"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -62,7 +61,6 @@ type leaseUpdater struct {
 	name      string
 	lock      sync.Mutex
 	cancel    context.CancelFunc
-	recorder  events.Recorder
 }
 
 func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
