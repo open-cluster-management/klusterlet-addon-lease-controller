@@ -109,17 +109,16 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return reconcile.Result{}, err
 		}
 		r.leaseUpdater = u
+		err = r.leaseUpdater.start(context.TODO(), &r.LeaseDurationSeconds)
+		if err != nil {
+			return reconcile.Result{}, err
+		}
 	}
 
 	if instance.DeletionTimestamp != nil {
 		leaseLog.Info(fmt.Sprintf("stop lease for %s", req.NamespacedName.Name))
 		r.leaseUpdater.stop(context.TODO())
 		return reconcile.Result{}, nil
-	}
-
-	err := r.leaseUpdater.start(context.TODO(), &r.LeaseDurationSeconds)
-	if err != nil {
-		return reconcile.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
