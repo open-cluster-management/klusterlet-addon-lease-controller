@@ -111,6 +111,7 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.leaseUpdater = u
 		err = r.leaseUpdater.start(context.TODO(), &r.LeaseDurationSeconds)
 		if err != nil {
+			r.leaseUpdater = nil
 			return reconcile.Result{}, err
 		}
 	}
