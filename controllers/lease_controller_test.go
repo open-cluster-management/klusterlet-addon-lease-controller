@@ -266,29 +266,32 @@ func Test_leaseUpdater_start(t *testing.T) {
 		hubClient kubernetes.Interface
 		namespace string
 		name      string
+		checkPod  func() (bool, error)
 	}
 	type args struct {
 		ctx                  context.Context
 		leaseDurationSeconds *int32
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		wantErr bool
+		name       string
+		fields     fields
+		args       args
+		wantErr    bool
+		wantUpdate bool
 	}{
 		{
 			name: "Lease not exists",
 			fields: fields{
 				hubClient: cNotFound,
-				name:      "lease-name",
+				name:      "lease-name-1",
 				namespace: "lease-namespace",
 			},
 			args: args{
 				ctx:                  context.TODO(),
 				leaseDurationSeconds: &leaseDurationSeconds,
 			},
-			wantErr: false,
+			wantErr:    false,
+			wantUpdate: true,
 		},
 		{
 			name: "Lease exists",
@@ -301,15 +304,47 @@ func Test_leaseUpdater_start(t *testing.T) {
 				ctx:                  context.TODO(),
 				leaseDurationSeconds: &leaseDurationSeconds,
 			},
-			wantErr: false,
+			wantErr:    false,
+			wantUpdate: true,
+		},
+		{
+			name: "Pod is running",
+			fields: fields{
+				hubClient: cNotFound,
+				name:      "lease-name-3",
+				namespace: "lease-namespace",
+				checkPod:  func() (bool, error) { return true, nil },
+			},
+			args: args{
+				ctx:                  context.TODO(),
+				leaseDurationSeconds: &leaseDurationSeconds,
+			},
+			wantErr:    false,
+			wantUpdate: true,
+		},
+		{
+			name: "Pod is not running",
+			fields: fields{
+				hubClient: cNotFound,
+				name:      "lease-name-4",
+				namespace: "lease-namespace",
+				checkPod:  func() (bool, error) { return false, nil },
+			},
+			args: args{
+				ctx:                  context.TODO(),
+				leaseDurationSeconds: &leaseDurationSeconds,
+			},
+			wantErr:    false,
+			wantUpdate: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			u := &leaseUpdater{
-				hubClient: tt.fields.hubClient,
-				namespace: tt.fields.namespace,
-				name:      tt.fields.name,
+				hubClient:         tt.fields.hubClient,
+				namespace:         tt.fields.namespace,
+				name:              tt.fields.name,
+				checkPodIsRunning: tt.fields.checkPod,
 			}
 			if err := u.start(tt.args.ctx, tt.args.leaseDurationSeconds); (err != nil) != tt.wantErr {
 				t.Errorf("leaseUpdater.start() error = %v, wantErr %v", err, tt.wantErr)
@@ -326,8 +361,11 @@ func Test_leaseUpdater_start(t *testing.T) {
 				if err != nil {
 					t.Errorf("Lease not found %s/%s", u.name, u.namespace)
 				}
-				if l0.Spec.RenewTime == l1.Spec.RenewTime {
-					t.Error("Lease not updated")
+				if tt.wantUpdate && l0.Spec.RenewTime == l1.Spec.RenewTime {
+					t.Error("Lease is not updated")
+				}
+				if !tt.wantUpdate && l0.Spec.RenewTime != l1.Spec.RenewTime {
+					t.Error("Lease should not be updated")
 				}
 			}
 		})
