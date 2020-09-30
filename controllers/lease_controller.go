@@ -71,15 +71,13 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	leaseLog.Info(fmt.Sprintf("processing %s", req.NamespacedName.Name))
 
 	if r.leaseUpdater == nil {
-		if r.PodName != "" && r.PodNamespace != "" {
-			leaseLog.Info(fmt.Sprintf("Wait until pod %s/%s is ready", r.PodName, r.PodNamespace))
-			ready, err := r.waitPodRunning()
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			if !ready {
-				return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
-			}
+		leaseLog.Info(fmt.Sprintf("Wait until pod %s/%s is ready", r.PodName, r.PodNamespace))
+		ready, err := r.checkPodIsRunning()
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		if !ready {
+			return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
 		}
 	}
 
@@ -147,8 +145,11 @@ func (r *LeaseReconciler) newSecretPredicate() predicate.Predicate {
 	})
 }
 
-//waitPodReady wait until the pod is ready
-func (r *LeaseReconciler) waitPodRunning() (bool, error) {
+//checkPodIsRunning check if the pod is ready
+func (r *LeaseReconciler) checkPodIsRunning() (bool, error) {
+	if r.PodName == "" && r.PodNamespace == "" {
+		return true, nil
+	}
 	pod := corev1.Pod{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: r.PodName, Namespace: r.PodNamespace}, &pod)
 	if err != nil {
@@ -168,7 +169,7 @@ func (r *LeaseReconciler) newUpdaterLease(instance *corev1.Secret) (*leaseUpdate
 		hubClient:         clientset,
 		name:              r.LeaseName,
 		namespace:         r.LeaseNamespace,
-		checkPodIsRunning: r.waitPodRunning,
+		checkPodIsRunning: r.checkPodIsRunning,
 	}, nil
 }
 

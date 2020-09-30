@@ -23,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-func TestLeaseReconciler_waitPodRunning(t *testing.T) {
+func TestLeaseReconciler_checkPodIsRunning(t *testing.T) {
 	s := scheme.Scheme
 	podRunning := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -107,13 +107,13 @@ func TestLeaseReconciler_waitPodRunning(t *testing.T) {
 				PodNamespace:         tt.fields.PodNamespace,
 				leaseUpdater:         tt.fields.leaseUpdater,
 			}
-			got, err := r.waitPodRunning()
+			got, err := r.checkPodIsRunning()
 			if (err != nil) != tt.wantErr {
-				t.Errorf("LeaseReconciler.waitPodReady() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("LeaseReconciler.checkPodIsRunning() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("LeaseReconciler.waitPodReady() = %v, want %v", got, tt.want)
+				t.Errorf("LeaseReconciler.checkPodIsRunning() = %v, want %v", got, tt.want)
 			}
 		})
 	}
