@@ -71,12 +71,12 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	leaseLog.Info(fmt.Sprintf("processing %s", req.NamespacedName.Name))
 
 	if r.leaseUpdater == nil {
-		leaseLog.Info(fmt.Sprintf("Wait until pod %s/%s is ready", r.PodName, r.PodNamespace))
 		ready, err := r.checkPodIsRunning()
 		if err != nil {
 			return reconcile.Result{}, err
 		}
 		if !ready {
+			leaseLog.Info(fmt.Sprintf("Wait until pod %s/%s is ready", r.PodName, r.PodNamespace))
 			return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
 		}
 	}
@@ -147,7 +147,7 @@ func (r *LeaseReconciler) newSecretPredicate() predicate.Predicate {
 
 //checkPodIsRunning check if the pod is ready
 func (r *LeaseReconciler) checkPodIsRunning() (bool, error) {
-	if r.PodName == "" && r.PodNamespace == "" {
+	if r.PodName == "" || r.PodNamespace == "" {
 		return true, nil
 	}
 	pod := corev1.Pod{}
