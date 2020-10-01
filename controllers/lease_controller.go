@@ -155,7 +155,15 @@ func (r *LeaseReconciler) checkPodIsRunning() (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	return pod.Status.Phase == corev1.PodRunning, nil
+
+	// check if the pod has condition ready=true
+	for _, c := range pod.Status.Conditions {
+		if c.Type == corev1.PodReady {
+			return c.Status == corev1.ConditionTrue, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (r *LeaseReconciler) newUpdaterLease(instance *corev1.Secret) (*leaseUpdater, error) {
@@ -236,7 +244,7 @@ func (u *leaseUpdater) update(ctx context.Context) {
 			return
 		}
 		if !podIsRunning {
-			leaseLog.Info("Skipping lease %s/%s update as pod is not running.")
+			leaseLog.Info(fmt.Sprintf("Skipping lease %s/%s update as pod is not running.", u.name, u.namespace))
 			return
 		}
 	}
