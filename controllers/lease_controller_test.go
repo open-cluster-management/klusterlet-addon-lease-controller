@@ -32,6 +32,12 @@ func TestLeaseReconciler_checkPodIsRunning(t *testing.T) {
 		},
 		Status: corev1.PodStatus{
 			Phase: corev1.PodRunning,
+			Conditions: []corev1.PodCondition{
+				corev1.PodCondition{
+					Type:   corev1.PodReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
 		},
 	}
 	podFailed := &corev1.Pod{
@@ -457,6 +463,12 @@ func TestLeaseReconciler_Reconcile(t *testing.T) {
 		},
 		Status: corev1.PodStatus{
 			Phase: corev1.PodRunning,
+			Conditions: []corev1.PodCondition{
+				corev1.PodCondition{
+					Type:   corev1.PodReady,
+					Status: corev1.ConditionTrue,
+				},
+			},
 		},
 	}
 	podFailed := &corev1.Pod{
