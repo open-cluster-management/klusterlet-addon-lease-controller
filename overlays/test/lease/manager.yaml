@@ -6,11 +6,19 @@ spec:
   template:
     spec:
       containers:
+      - name: fake-addon
+        image: busybox
+        command: ['sh', '-c', 'if [ ! -f /usr/share/do_not_run ]; then echo running; touch /usr/share/do_not_run; sleep 30; fi; exit 1;']
+        volumeMounts:
+        - mountPath: /usr/share/
+          name: shared-data
       - name: klusterlet-addon-lease-controller
         imagePullPolicy: IfNotPresent
         volumeMounts:
-          - mountPath: /tmp/coverage
-            name: coverage-dir  
+        - mountPath: /tmp/coverage
+          name: coverage-dir
+        - mountPath: /usr/share/
+          name: shared-data
         command: 
         args:
         - -lease-name 
@@ -39,9 +47,11 @@ spec:
               apiVersion: v1
               fieldPath: metadata.namespace
       volumes:
-        - name: coverage-dir
-          hostPath:
-            # directory location on host
-            path: /tmp/coverage
-            # this field is optional
-            type: Directory
+      - name: shared-data
+        emptyDir: {}
+      - name: coverage-dir
+        hostPath:
+          # directory location on host
+          path: /tmp/coverage
+          # this field is optional
+          type: Directory
