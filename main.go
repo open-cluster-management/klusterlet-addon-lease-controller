@@ -119,6 +119,7 @@ func main() {
 		LeaseDurationSeconds:          int32(leaseDurationSeconds),
 		HubConfigSecretName:           hubConfigSecretName,
 		BuildKubeClientWithSecretFunc: controllers.BuildKubeClientWithSecret,
+		CheckLeaseUpdaterClient:       controllers.CheckLeaseUpdaterClient,
 		PodName:                       os.Getenv("POD_NAME"),
 		PodNamespace:                  os.Getenv("POD_NAMESPACE"),
 	}).SetupWithManager(mgr); err != nil {

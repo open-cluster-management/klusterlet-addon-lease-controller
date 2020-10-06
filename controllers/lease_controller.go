@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"reflect"
 	"sync"
 	"time"
 
@@ -38,6 +39,9 @@ var (
 // IBuildKubeClientWithSecret a function which convert a secret to client
 type IBuildKubeClientWithSecret func(secret *corev1.Secret) (kubernetes.Interface, error)
 
+// ICheckLeaseUpdaterClient checks if a leaseUpdater has valid client
+type ICheckLeaseUpdaterClient func(u *leaseUpdater) bool
+
 // LeaseReconciler reconciles a Secret object
 type LeaseReconciler struct {
 	client.Client
@@ -52,6 +56,8 @@ type LeaseReconciler struct {
 	PodName                       string
 	PodNamespace                  string
 	leaseUpdater                  *leaseUpdater
+	cachedSecret                  *corev1.Secret
+	CheckLeaseUpdaterClient       ICheckLeaseUpdaterClient
 }
 
 // leaseUpdater periodically updates the lease of a managed cluster
@@ -108,6 +114,11 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err != nil {
 			return reconcile.Result{}, err
 		}
+		if r.CheckLeaseUpdaterClient != nil && !r.CheckLeaseUpdaterClient(u) {
+			leaseLog.Info("Failed to use the current client for lease update. Requeue after 10 seconds.")
+			return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
+		}
+		r.cachedSecret = instance
 		r.leaseUpdater = u
 		err = r.leaseUpdater.start(context.TODO(), &r.LeaseDurationSeconds)
 		if err != nil {
@@ -119,10 +130,27 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if instance.DeletionTimestamp != nil {
 		leaseLog.Info(fmt.Sprintf("stop lease for %s", req.NamespacedName.Name))
 		r.leaseUpdater.stop(context.TODO())
+		r.leaseUpdater = nil
 		return reconcile.Result{}, nil
 	}
 
-	return ctrl.Result{}, nil
+	if r.cachedSecret != nil && !reflect.DeepEqual(instance.Data, r.cachedSecret.Data) {
+		// test if the older kubeconfig doesn't work and the newer kubeconfig works
+		if r.CheckLeaseUpdaterClient != nil && !r.CheckLeaseUpdaterClient(r.leaseUpdater) {
+			if uNew, err := r.newUpdaterLease(instance); err != nil {
+				return reconcile.Result{}, err
+			} else if r.CheckLeaseUpdaterClient(uNew) {
+				//restart the pod if the newer one works
+				if err := r.deletePod(); err != nil {
+					return reconcile.Result{}, err
+				}
+			}
+		}
+		leaseLog.Info("Detected secret changes, but new secret is not valid. Reque after 30 seconds.")
+		return reconcile.Result{Requeue: true, RequeueAfter: 30 * time.Second}, nil
+	}
+
+	return reconcile.Result{}, nil
 }
 
 func (r *LeaseReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -146,6 +174,24 @@ func (r *LeaseReconciler) newSecretPredicate() predicate.Predicate {
 	})
 }
 
+// deletePod delete the current pod
+func (r *LeaseReconciler) deletePod() error {
+	pod := &corev1.Pod{}
+	if err := r.Client.Get(context.TODO(),
+		types.NamespacedName{Name: r.PodName, Namespace: r.PodNamespace},
+		pod,
+	); err != nil {
+		leaseLog.Error(err, "failed to get pod")
+		return err
+	}
+	err := r.Client.Delete(context.TODO(), pod)
+	if err != nil {
+		leaseLog.Error(err, "failed to restart pod")
+		return err
+	}
+	return nil
+}
+
 //waitPodReady wait until the pod is ready
 func (r *LeaseReconciler) waitPodRunning() (bool, error) {
 	pod := corev1.Pod{}
@@ -162,7 +208,7 @@ func (r *LeaseReconciler) newUpdaterLease(instance *corev1.Secret) (*leaseUpdate
 		leaseLog.Error(err, "kubernetes.NewForConfig")
 		return nil, err
 	}
-	leaseLog.V(2).Info("kubernetes.NewForConfig succedded")
+	leaseLog.V(2).Info("kubernetes.NewForConfig succeeded")
 	return &leaseUpdater{
 		hubClient: clientset,
 		name:      r.LeaseName,
@@ -253,4 +299,18 @@ func (u *leaseUpdater) stop(ctx context.Context) {
 	}
 	u.cancel()
 	u.cancel = nil
+}
+
+// checkClient checks if the current client still functioning properly
+func CheckLeaseUpdaterClient(u *leaseUpdater) bool {
+	if u == nil {
+		return false
+	}
+	leaseLog.Info(fmt.Sprintf("check if client can get lease %s/%s", u.name, u.namespace))
+	_, err := u.hubClient.CoordinationV1().Leases(u.namespace).Get(context.TODO(), u.name, metav1.GetOptions{})
+	if err != nil {
+		leaseLog.Error(err, fmt.Sprintf("failed to get lease %s/%s", u.name, u.namespace))
+		return false
+	}
+	return true
 }
