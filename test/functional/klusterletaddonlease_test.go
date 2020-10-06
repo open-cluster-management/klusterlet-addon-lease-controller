@@ -65,7 +65,7 @@ var _ = Describe("Lease", func() {
 			}).Should(BeTrue())
 		})
 		When("Container crashed, check renew not updated", func() {
-			time.Sleep(30 * time.Second)
+			time.Sleep(60 * time.Second)
 			llast, err := clientHub.CoordinationV1().Leases(clusterNamespace).Get(context.TODO(), leaseName, metav1.GetOptions{})
 			Expect(err).To(BeNil())
 			Consistently(func() bool {
