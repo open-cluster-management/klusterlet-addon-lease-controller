@@ -62,11 +62,12 @@ type LeaseReconciler struct {
 
 // leaseUpdater periodically updates the lease of a managed cluster
 type leaseUpdater struct {
-	hubClient kubernetes.Interface
-	namespace string
-	name      string
-	lock      sync.Mutex
-	cancel    context.CancelFunc
+	hubClient         kubernetes.Interface
+	namespace         string
+	name              string
+	lock              sync.Mutex
+	cancel            context.CancelFunc
+	checkPodIsRunning func() (bool, error) // callback function for checking if pod is running
 }
 
 func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
@@ -76,15 +77,13 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	leaseLog.Info(fmt.Sprintf("processing %s", req.NamespacedName.Name))
 
 	if r.leaseUpdater == nil {
-		if r.PodName != "" && r.PodNamespace != "" {
+		ready, err := r.checkPodIsRunning()
+		if err != nil {
+			return reconcile.Result{}, err
+		}
+		if !ready {
 			leaseLog.Info(fmt.Sprintf("Wait until pod %s/%s is ready", r.PodName, r.PodNamespace))
-			ready, err := r.waitPodRunning()
-			if err != nil {
-				return reconcile.Result{}, err
-			}
-			if !ready {
-				return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
-			}
+			return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
 		}
 	}
 
@@ -175,6 +174,7 @@ func (r *LeaseReconciler) newSecretPredicate() predicate.Predicate {
 	})
 }
 
+
 // deletePod delete the current pod
 func (r *LeaseReconciler) deletePod() error {
 	pod := &corev1.Pod{}
@@ -193,14 +193,26 @@ func (r *LeaseReconciler) deletePod() error {
 	return nil
 }
 
-//waitPodReady wait until the pod is ready
-func (r *LeaseReconciler) waitPodRunning() (bool, error) {
+
+//checkPodIsRunning check if the pod is ready
+func (r *LeaseReconciler) checkPodIsRunning() (bool, error) {
+	if r.PodName == "" || r.PodNamespace == "" {
+		return true, nil
+	}
 	pod := corev1.Pod{}
 	err := r.Client.Get(context.TODO(), types.NamespacedName{Name: r.PodName, Namespace: r.PodNamespace}, &pod)
 	if err != nil {
 		return false, err
 	}
-	return pod.Status.Phase == corev1.PodRunning, nil
+
+	// check if the pod has condition ready=true
+	for _, c := range pod.Status.Conditions {
+		if c.Type == corev1.PodReady {
+			return c.Status == corev1.ConditionTrue, nil
+		}
+	}
+
+	return false, nil
 }
 
 func (r *LeaseReconciler) newUpdaterLease(instance *corev1.Secret) (*leaseUpdater, error) {
@@ -211,9 +223,10 @@ func (r *LeaseReconciler) newUpdaterLease(instance *corev1.Secret) (*leaseUpdate
 	}
 	leaseLog.V(2).Info("kubernetes.NewForConfig succeeded")
 	return &leaseUpdater{
-		hubClient: clientset,
-		name:      r.LeaseName,
-		namespace: r.LeaseNamespace,
+		hubClient:         clientset,
+		name:              r.LeaseName,
+		namespace:         r.LeaseNamespace,
+		checkPodIsRunning: r.checkPodIsRunning,
 	}, nil
 }
 
@@ -273,6 +286,18 @@ func (u *leaseUpdater) start(ctx context.Context, leaseDurationSeconds *int32) e
 
 // update the lease of a given managed cluster.
 func (u *leaseUpdater) update(ctx context.Context) {
+	if u.checkPodIsRunning != nil {
+		podIsRunning, err := u.checkPodIsRunning()
+		if err != nil {
+			leaseLog.Error(err, "unable to get pod status")
+			return
+		}
+		if !podIsRunning {
+			leaseLog.Info(fmt.Sprintf("Skipping lease %s/%s update as pod is not running.", u.name, u.namespace))
+			return
+		}
+	}
+
 	leaseLog.Info(fmt.Sprintf("Update lease %s/%s", u.name, u.namespace))
 	lease, err := u.hubClient.CoordinationV1().Leases(u.namespace).Get(ctx, u.name, metav1.GetOptions{})
 	if err != nil {
