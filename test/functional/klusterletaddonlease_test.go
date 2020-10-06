@@ -65,7 +65,19 @@ var _ = Describe("Lease", func() {
 			}).Should(BeTrue())
 		})
 		When("Container crashed, check renew not updated", func() {
-			time.Sleep(60 * time.Second)
+			Eventually(func() bool {
+				klog.Infof("Wait for lease to be not renewed %s/%s", leaseName, clusterNamespace)
+				lold, err := clientHub.CoordinationV1().Leases(clusterNamespace).Get(context.TODO(), leaseName, metav1.GetOptions{})
+				if err != nil {
+					return false
+				}
+				time.Sleep(6 * time.Second)
+				lnew, err := clientHub.CoordinationV1().Leases(clusterNamespace).Get(context.TODO(), leaseName, metav1.GetOptions{})
+				if err != nil {
+					return false
+				}
+				return lold.Spec.RenewTime.Equal(lnew.Spec.RenewTime)
+			}, 150, 10).Should(BeTrue())
 			llast, err := clientHub.CoordinationV1().Leases(clusterNamespace).Get(context.TODO(), leaseName, metav1.GetOptions{})
 			Expect(err).To(BeNil())
 			Consistently(func() bool {
@@ -82,7 +94,7 @@ var _ = Describe("Lease", func() {
 
 				llast = lnow
 				return false
-			}, 10, 2).Should(BeTrue())
+			}, 16, 2).Should(BeTrue())
 		})
 		By("Deleting the secret", func() {
 			err := clientManagedCluster.CoreV1().Secrets(addonNamespace).Delete(context.TODO(), "hub-config-secret", metav1.DeleteOptions{})
