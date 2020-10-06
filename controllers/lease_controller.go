@@ -144,10 +144,11 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				if err := r.deletePod(); err != nil {
 					return reconcile.Result{}, err
 				}
+			} else {
+				leaseLog.Info("Detected secret changes, but new secret is not valid. Reque after 30 seconds.")
+				return reconcile.Result{Requeue: true, RequeueAfter: 30 * time.Second}, nil
 			}
 		}
-		leaseLog.Info("Detected secret changes, but new secret is not valid. Reque after 30 seconds.")
-		return reconcile.Result{Requeue: true, RequeueAfter: 30 * time.Second}, nil
 	}
 
 	return reconcile.Result{}, nil
