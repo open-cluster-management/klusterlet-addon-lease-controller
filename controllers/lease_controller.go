@@ -308,7 +308,7 @@ func CheckLeaseUpdaterClient(u *leaseUpdater) bool {
 	}
 	leaseLog.Info(fmt.Sprintf("check if client can get lease %s/%s", u.name, u.namespace))
 	_, err := u.hubClient.CoordinationV1().Leases(u.namespace).Get(context.TODO(), u.name, metav1.GetOptions{})
-	if err != nil {
+	if err != nil && !errors.IsNotFound(err) {
 		leaseLog.Error(err, fmt.Sprintf("failed to get lease %s/%s", u.name, u.namespace))
 		return false
 	}
