@@ -547,7 +547,7 @@ func TestLeaseReconciler_Reconcile(t *testing.T) {
 				PodName:                   podName,
 				PodNamespace:              podNamespace,
 			},
-			want:    ctrl.Result{Requeue: true, RequeueAfter: 30 * time.Second},
+			want:    ctrl.Result{Requeue: true, RequeueAfter: 60 * time.Second},
 			wantErr: false,
 		},
 		{
