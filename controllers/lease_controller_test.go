@@ -6,6 +6,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 	"time"
@@ -13,11 +14,13 @@ import (
 	"github.com/go-logr/logr"
 	coordinationv1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	fakekubeclient "k8s.io/client-go/kubernetes/fake"
 	"k8s.io/client-go/kubernetes/scheme"
+	ctesting "k8s.io/client-go/testing"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -449,6 +452,7 @@ func TestLeaseReconciler_Reconcile(t *testing.T) {
 		},
 	}
 	secret := &corev1.Secret{}
+	secret1 := &corev1.Secret{Data: map[string][]byte{"a": []byte("b")}}
 	now := metav1.NewTime(time.Now())
 
 	secretDelete := &corev1.Secret{
@@ -482,6 +486,7 @@ func TestLeaseReconciler_Reconcile(t *testing.T) {
 	}
 	cSecret := fake.NewFakeClientWithScheme(s, ns, secret)
 	cWithPodRunning := fake.NewFakeClientWithScheme(s, ns, secret, podRunning)
+	cWithPodRunningNew := fake.NewFakeClientWithScheme(s, ns, secret, podRunning)
 	cWithPodFailed := fake.NewFakeClientWithScheme(s, ns, secret, podFailed)
 	cWithoutSecret := fake.NewFakeClientWithScheme(s, ns)
 	cSecretDeleted := fake.NewFakeClientWithScheme(s, ns, secretDelete)
@@ -497,6 +502,8 @@ func TestLeaseReconciler_Reconcile(t *testing.T) {
 		PodName                   string
 		PodNamespace              string
 		leaseUpdater              *leaseUpdater
+		CheckLeaseUpdaterClient   ICheckLeaseUpdaterClient
+		cachedSecret              *corev1.Secret
 	}
 	type args struct {
 		req ctrl.Request
@@ -519,6 +526,46 @@ func TestLeaseReconciler_Reconcile(t *testing.T) {
 				HubConfigSecretName:       "fakesecretname",
 				LeaseDurationSeconds:      1,
 				BuildKubeClientWithSecret: fakeBuikdBuildKubeClientWithSecret,
+			},
+			want:    ctrl.Result{},
+			wantErr: false,
+		},
+		{
+			name: "client never works",
+			fields: fields{
+				Client:                    cWithPodRunningNew,
+				Log:                       ctrl.Log.WithName("controllers").WithName("Lease"),
+				Scheme:                    s,
+				LeaseName:                 leaseName,
+				LeaseNamespace:            leaseNamespace,
+				HubConfigSecretName:       "fakesecretname",
+				LeaseDurationSeconds:      1,
+				BuildKubeClientWithSecret: fakeBuikdBuildKubeClientWithSecret,
+				CheckLeaseUpdaterClient:   func(u *leaseUpdater) bool { return false },
+				cachedSecret:              secret1,
+				leaseUpdater:              &leaseUpdater{},
+				PodName:                   podName,
+				PodNamespace:              podNamespace,
+			},
+			want:    ctrl.Result{Requeue: true, RequeueAfter: 30 * time.Second},
+			wantErr: false,
+		},
+		{
+			name: "new client works",
+			fields: fields{
+				Client:                    cWithPodRunningNew,
+				Log:                       ctrl.Log.WithName("controllers").WithName("Lease"),
+				Scheme:                    s,
+				LeaseName:                 leaseName,
+				LeaseNamespace:            leaseNamespace,
+				HubConfigSecretName:       "fakesecretname",
+				LeaseDurationSeconds:      1,
+				BuildKubeClientWithSecret: fakeBuikdBuildKubeClientWithSecret,
+				CheckLeaseUpdaterClient:   func(u *leaseUpdater) bool { return u.name != "" },
+				cachedSecret:              secret1,
+				leaseUpdater:              &leaseUpdater{},
+				PodName:                   podName,
+				PodNamespace:              podNamespace,
 			},
 			want:    ctrl.Result{},
 			wantErr: false,
@@ -598,6 +645,8 @@ func TestLeaseReconciler_Reconcile(t *testing.T) {
 				LeaseNamespace:                tt.fields.LeaseNamespace,
 				HubConfigSecretName:           tt.fields.HubConfigSecretName,
 				BuildKubeClientWithSecretFunc: tt.fields.BuildKubeClientWithSecret,
+				CheckLeaseUpdaterClient:       tt.fields.CheckLeaseUpdaterClient,
+				cachedSecret:                  tt.fields.cachedSecret,
 				LeaseDurationSeconds:          tt.fields.LeaseDurationSeconds,
 				PodName:                       tt.fields.PodName,
 				PodNamespace:                  tt.fields.PodNamespace,
@@ -617,4 +666,76 @@ func TestLeaseReconciler_Reconcile(t *testing.T) {
 
 func fakeBuikdBuildKubeClientWithSecret(secret *corev1.Secret) (kubernetes.Interface, error) {
 	return fakekubeclient.NewSimpleClientset(), nil
+}
+func unAuth(action ctesting.Action) (handled bool, ret runtime.Object, err error) {
+	return true, nil, errors.NewUnauthorized("fake")
+}
+func x509(action ctesting.Action) (handled bool, ret runtime.Object, err error) {
+	return true, nil, fmt.Errorf("x509: certificate signed by unknown authority")
+}
+
+func Test_CheckLeaseUpdaterClient(t *testing.T) {
+	lease := &coordinationv1.Lease{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-lease-name",
+			Namespace: "test-lease-namespace",
+		},
+	}
+	cNotFound := fakekubeclient.NewSimpleClientset()
+	cFound := fakekubeclient.NewSimpleClientset(lease)
+	cUnAuth := fakekubeclient.NewSimpleClientset(lease)
+	cUnAuth.PrependReactor("*", "*", unAuth)
+	cX509 := fakekubeclient.NewSimpleClientset(lease)
+	cX509.PrependReactor("*", "*", x509)
+	tests := []struct {
+		name string
+		arg  *leaseUpdater
+		want bool
+	}{
+		{
+			name: "unauthorized",
+			arg: &leaseUpdater{
+				hubClient: cUnAuth,
+				namespace: "test-lease-namespace",
+				name:      "test-lease-name",
+			},
+			want: false,
+		},
+		{
+			name: "x509",
+			arg: &leaseUpdater{
+				hubClient: cX509,
+				namespace: "test-lease-namespace",
+				name:      "test-lease-name",
+			},
+			want: false,
+		},
+		{
+			name: "not found",
+			arg: &leaseUpdater{
+				hubClient: cNotFound,
+				namespace: "test-lease-namespace",
+				name:      "test-lease-name",
+			},
+			want: true,
+		},
+		{
+			name: "found and valid",
+			arg: &leaseUpdater{
+				hubClient: cFound,
+				namespace: "test-lease-namespace",
+				name:      "test-lease-name",
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			b := CheckLeaseUpdaterClient(tt.arg)
+			if b != tt.want {
+				t.Errorf("CheckLeaseUpdaterClient() got = %v, want = %v", b, tt.want)
+				return
+			}
+		})
+	}
 }

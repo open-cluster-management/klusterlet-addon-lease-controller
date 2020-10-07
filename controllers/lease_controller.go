@@ -117,13 +117,13 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			leaseLog.Info("Failed to use the current client for lease update. Requeue after 10 seconds.")
 			return reconcile.Result{Requeue: true, RequeueAfter: 10 * time.Second}, nil
 		}
-		r.cachedSecret = instance
 		r.leaseUpdater = u
 		err = r.leaseUpdater.start(context.TODO(), &r.LeaseDurationSeconds)
 		if err != nil {
 			r.leaseUpdater = nil
 			return reconcile.Result{}, err
 		}
+		r.cachedSecret = instance
 	}
 
 	if instance.DeletionTimestamp != nil {
@@ -133,13 +133,15 @@ func (r *LeaseReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return reconcile.Result{}, nil
 	}
 
-	if r.cachedSecret != nil && !reflect.DeepEqual(instance.Data, r.cachedSecret.Data) {
+	if r.PodName != "" && r.PodNamespace != "" &&
+		r.cachedSecret != nil && !reflect.DeepEqual(instance.Data, r.cachedSecret.Data) {
 		// test if the older kubeconfig doesn't work and the newer kubeconfig works
 		if r.CheckLeaseUpdaterClient != nil && !r.CheckLeaseUpdaterClient(r.leaseUpdater) {
 			if uNew, err := r.newUpdaterLease(instance); err != nil {
 				return reconcile.Result{}, err
 			} else if r.CheckLeaseUpdaterClient(uNew) {
 				//restart the pod if the newer one works
+				leaseLog.Info("Restarting pod to use new secret.")
 				if err := r.deletePod(); err != nil {
 					return reconcile.Result{}, err
 				}
@@ -174,7 +176,6 @@ func (r *LeaseReconciler) newSecretPredicate() predicate.Predicate {
 	})
 }
 
-
 // deletePod delete the current pod
 func (r *LeaseReconciler) deletePod() error {
 	pod := &corev1.Pod{}
@@ -192,7 +193,6 @@ func (r *LeaseReconciler) deletePod() error {
 	}
 	return nil
 }
-
 
 //checkPodIsRunning check if the pod is ready
 func (r *LeaseReconciler) checkPodIsRunning() (bool, error) {
@@ -327,7 +327,7 @@ func (u *leaseUpdater) stop(ctx context.Context) {
 	u.cancel = nil
 }
 
-// checkClient checks if the current client still functioning properly
+// CheckLeaseUpdaterClient checks if the current client still functioning properly
 func CheckLeaseUpdaterClient(u *leaseUpdater) bool {
 	if u == nil {
 		return false
