@@ -62,6 +62,7 @@ The serviceaccount used on the hub (which is identify by the token in the provid
 or launch
 `go run ./main.go -lease-name addon-lease -lease-namespace open-cluster-management-self-import -hub-kubeconfig-secret appmgr-hub-kubeconfig`
 
+
 # Unit tests
 
 `make test`
