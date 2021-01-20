@@ -15,7 +15,6 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	"k8s.io/client-go/rest"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
@@ -51,6 +50,7 @@ func init() {
 	flag.StringVar(&hubConfigSecretName, "hub-kubeconfig-secret", "", "The lease namespace")
 	flag.IntVar(&leaseDurationSeconds, "lease-duration", 60, "The lease duration in seconds, default 60 sec.")
 	flag.IntVar(&startupDelay, "startup-delay", 10, "The startup delay in seconds, default 10 sec.")
+	flag.BoolVar(&enableLeaderElection, "leader-election", false, "Enable leader elction or not, default false.")
 }
 
 func printVersion() {
@@ -74,11 +74,12 @@ var leaseNamespace string
 var hubConfigSecretName string
 var leaseDurationSeconds int
 var startupDelay int
+var enableLeaderElection bool
 
 func main() {
 	//The parse is set here in case we don't use the `go test`
 	flag.Parse()
-	var enableLeaderElection bool
+
 	ctrl.SetLogger(zap.New(zap.UseDevMode(true)))
 
 	if leaseName == "" || leaseNamespace == "" {
@@ -87,12 +88,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	enableLeaderElection = false
-	if _, err := rest.InClusterConfig(); err == nil {
-		setupLog.Info("LeaderElection enabled as running in a cluster")
-		enableLeaderElection = true
+	if enableLeaderElection {
+		setupLog.Info("LeaderElection enabled")
 	} else {
-		setupLog.Info("LeaderElection disabled as not running in a cluster")
+		setupLog.Info("LeaderElection disabled")
 	}
 
 	printVersion()
