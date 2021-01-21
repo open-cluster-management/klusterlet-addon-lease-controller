@@ -71,5 +71,3 @@ or launch
 
 The functional tests will create 2 kind clusters, one for the hub and one for the managedcluster.
 `make functional-test-full`
-
-fake push
