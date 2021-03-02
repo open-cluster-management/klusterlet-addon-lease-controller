@@ -1,10 +1,10 @@
+#!/bin/bash -e
+
 # Copyright (c) 2020 Red Hat, Inc.
 # Copyright Contributors to the Open Cluster Management project
 
-#!/bin/bash -e
-
 # NOTE: This script should not be called directly. Please run `make test`.
-
+# set -x
 set -o pipefail
 
 _package=$1

@@ -49,9 +49,7 @@ export DOCKER_BUILD_OPTS  = --build-arg VCS_REF=$(VCS_REF) \
 
 BEFORE_SCRIPT := $(shell build/before-make.sh)
 
-export BUILD_HARNESS_EXTENSIONS_BRANCH = main
-
-USE_VENDORIZED_BUILD_HARNESS ?=
+USE_VENDORIZED_BUILD_HARNESS ?= 
 
 ifndef USE_VENDORIZED_BUILD_HARNESS
 -include $(shell curl -s -H 'Authorization: token ${GITHUB_TOKEN}' -H 'Accept: application/vnd.github.v4.raw' -L https://api.github.com/repos/open-cluster-management/build-harness-extensions/contents/templates/Makefile.build-harness-bootstrap -o .build-harness-bootstrap; echo .build-harness-bootstrap)
@@ -143,6 +141,11 @@ functional-test-full: go-bindata
 
 .PHONY: kind-cluster-setup
 kind-cluster-setup: 
+
+# .PHONY: test
+# ## Runs go unit tests
+# test: 
+# 	@build/run-unit-tests.sh
 
 # Run tests
 test: generate fmt vet manifests component/test/unit

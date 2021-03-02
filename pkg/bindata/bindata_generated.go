@@ -1,5 +1,3 @@
-// Copyright Contributors to the Open Cluster Management project
-
 // Code generated for package bindata by go-bindata DO NOT EDIT. (@generated)
 // sources:
 // resources/empty.txt
@@ -101,7 +99,7 @@ func emptyTxt() (*asset, error) {
 	return a, nil
 }
 
-var _component_versionComponent_version = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x32\xd2\x33\xd4\x33\x00\x04\x00\x00\xff\xff\xd1\x72\x59\x55\x05\x00\x00\x00")
+var _component_versionComponent_version = []byte("\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\x32\xd2\x33\xd6\x33\x00\x04\x00\x00\xff\xff\xbf\xa6\xdd\x56\x05\x00\x00\x00")
 
 func component_versionComponent_versionBytes() ([]byte, error) {
 	return bindataRead(
