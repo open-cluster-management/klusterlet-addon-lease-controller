@@ -1,3 +1,5 @@
+# Copyright Contributors to the Open Cluster Management project
+
 namespace: open-cluster-management-agent-addon
 
 resources:

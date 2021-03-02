@@ -1,3 +1,5 @@
+[comment]: # ( Copyright Contributors to the Open Cluster Management project )
+
 # klusterlet-addon-lease-controller
 
 This controller runs on the managed-cluster as a side car of each addon controller and it creates a lease on the hub when the addon secret is created on the managed-cluster.

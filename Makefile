@@ -1,6 +1,5 @@
-###############################################################################
 # Copyright (c) 2020 Red Hat, Inc.
-###############################################################################
+# Copyright Contributors to the Open Cluster Management project
 
 SHELL := /bin/bash
 
@@ -49,6 +48,8 @@ export DOCKER_BUILD_OPTS  = --build-arg VCS_REF=$(VCS_REF) \
 	--build-arg GITHUB_TOKEN=$(GITHUB_TOKEN)
 
 BEFORE_SCRIPT := $(shell build/before-make.sh)
+
+export BUILD_HARNESS_EXTENSIONS_BRANCH = main
 
 USE_VENDORIZED_BUILD_HARNESS ?=
 

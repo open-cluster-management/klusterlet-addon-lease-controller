@@ -1,6 +1,6 @@
-###############################################################################
 # Copyright (c) 2020 Red Hat, Inc.
-###############################################################################
+# Copyright Contributors to the Open Cluster Management project
+
 
 FROM openshift/origin-release:golang-1.15 as builder
 

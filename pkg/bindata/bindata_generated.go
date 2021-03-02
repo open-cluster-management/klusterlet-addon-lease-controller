@@ -1,3 +1,5 @@
+// Copyright Contributors to the Open Cluster Management project
+
 // Code generated for package bindata by go-bindata DO NOT EDIT. (@generated)
 // sources:
 // resources/empty.txt
