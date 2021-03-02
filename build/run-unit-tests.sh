@@ -1,12 +1,13 @@
 #!/bin/bash -e
-###############################################################################
+
 # Copyright (c) 2020 Red Hat, Inc.
-###############################################################################
+# Copyright Contributors to the Open Cluster Management project
 
 _script_dir=$(dirname "$0")
 mkdir -p test/unit/coverage
 echo 'mode: atomic' > test/unit/coverage/cover.out
 echo '' > test/unit/coverage/cover.tmp
+echo GOPACKAGES=$GOPACKAGES
 echo -e "${GOPACKAGES// /\\n}" | xargs -n1 -I{} $_script_dir/test-package.sh {} ${GOPACKAGES// /,}
 
 if [ ! -f test/unit/coverage/cover.out ]; then
