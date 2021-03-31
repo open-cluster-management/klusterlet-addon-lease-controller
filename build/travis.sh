@@ -51,9 +51,9 @@ fold_start deps "Dependencies"
 announce make component/init
 fold_end deps
 
-fold_start checks "Checks"
-announce make check
-fold_end checks
+# fold_start checks "Checks"
+# announce make check
+# fold_end checks
 
 fold_start unit "Unit Tests"
 announce make component/test/unit
