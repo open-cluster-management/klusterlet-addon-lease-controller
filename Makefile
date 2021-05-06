@@ -128,7 +128,7 @@ go-bindata-check:
 
 .PHONY: copyright-check
 copyright-check:
-	./build/copyright-check.sh $(TRAVIS_BRANCH)
+	./build/check-copyright.sh
 
 .PHONY: functional-test
 functional-test:

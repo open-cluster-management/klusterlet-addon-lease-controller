@@ -284,7 +284,7 @@ func (u *leaseUpdater) start(ctx context.Context, leaseDurationSeconds *int32) e
 	updateCtx, u.cancel = context.WithCancel(ctx)
 	d := time.Duration(*leaseDurationSeconds) * time.Second
 	go wait.JitterUntilWithContext(updateCtx, u.update, d, -1, true)
-	leaseLog.V(2).Info(fmt.Sprintf("ManagedClusterLeaseUpdateStrated Start to update lease %q/%q on hub cluster", u.name, u.namespace))
+	leaseLog.V(2).Info(fmt.Sprintf("ManagedClusterLeaseUpdateStarted Start to update lease %q/%q on hub cluster", u.name, u.namespace))
 	return nil
 }
 
