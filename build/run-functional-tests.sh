@@ -43,7 +43,6 @@ if ! which ginkgo > /dev/null; then
     export GO111MODULE=off
     echo "Installing ginkgo ..."
     go get github.com/onsi/ginkgo/ginkgo
-    go get github.com/onsi/gomega/...
 fi
 if ! which gocovmerge > /dev/null; then
   echo "Installing gocovmerge..."
