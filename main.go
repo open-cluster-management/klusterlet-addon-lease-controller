@@ -20,8 +20,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	"github.com/open-cluster-management/klusterlet-addon-lease-controller/controllers"
-	"github.com/open-cluster-management/klusterlet-addon-lease-controller/pkg/bindata"
+	"github.com/stolostron/klusterlet-addon-lease-controller/controllers"
+	"github.com/stolostron/klusterlet-addon-lease-controller/pkg/bindata"
 
 	corev1 "k8s.io/api/core/v1"
 	// +kubebuilder:scaffold:imports
@@ -104,7 +104,7 @@ func main() {
 		MetricsBindAddress: fmt.Sprintf("%s:%s", metricsHost, metricsPort),
 		Port:               operatorMetricsPort,
 		LeaderElection:     enableLeaderElection,
-		LeaderElectionID:   leaseName + "-addon-lease.agent.open-cluster-management.io",
+		LeaderElectionID:   leaseName + "-addon-lease.agent.stolostron.io",
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
