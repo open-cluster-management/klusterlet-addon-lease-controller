@@ -1,7 +1,7 @@
 domain: agent.open-cluster-management.io
 layout: go.kubebuilder.io/v2
 projectName: klusterlet-addon-lease-controller
-repo: github.com/open-cluster-management/klusterlet-addon-lease-controller
+repo: github.com/stolostron/klusterlet-addon-lease-controller
 version: 3-alpha
 plugins:
   go.sdk.operatorframework.io/v2-alpha: {}
