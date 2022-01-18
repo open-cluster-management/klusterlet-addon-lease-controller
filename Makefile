@@ -35,7 +35,7 @@ export COMPONENT_VERSION ?= $(shell cat ./COMPONENT_VERSION 2> /dev/null)
 export IMAGE_DESCRIPTION ?= RCM_Controller
 export DOCKER_FILE        = $(BUILD_DIR)/Dockerfile
 export DOCKER_REGISTRY   ?= quay.io
-export DOCKER_NAMESPACE  ?= open-cluster-management
+export DOCKER_NAMESPACE  ?= stolostron
 export DOCKER_IMAGE      ?= $(COMPONENT_NAME)
 export DOCKER_BUILD_TAG  ?= latest
 export DOCKER_TAG        ?= $(shell whoami)
@@ -53,7 +53,7 @@ BEFORE_SCRIPT := $(shell build/before-make.sh)
 USE_VENDORIZED_BUILD_HARNESS ?=
 
 ifndef USE_VENDORIZED_BUILD_HARNESS
--include $(shell curl -s -H 'Authorization: token ${GITHUB_TOKEN}' -H 'Accept: application/vnd.github.v4.raw' -L https://api.github.com/repos/open-cluster-management/build-harness-extensions/contents/templates/Makefile.build-harness-bootstrap -o .build-harness-bootstrap; echo .build-harness-bootstrap)
+-include $(shell [ -f ".build-harness-bootstrap" ] || curl -sL -o .build-harness-bootstrap -H "Authorization: token $(GITHUB_TOKEN)" -H "Accept: application/vnd.github.v3.raw" "https://raw.github.com/stolostron/build-harness-extensions/main/templates/Makefile.build-harness-bootstrap"; echo .build-harness-bootstrap)
 else
 -include vbh/.build-harness-vendorized
 endif
@@ -133,7 +133,8 @@ copyright-check:
 
 .PHONY: functional-test
 functional-test:
-	ginkgo -tags functional -v --slowSpecThreshold=30 test/functional -- -v=1
+	go test -tags functional -c ./test/functional -o ./test/functional/functional.test
+	cd ./test/functional && ./functional.test -ginkgo.slowSpecThreshold=15 -ginkgo.v=1 -ginkgo.failFast
 
 .PHONY: functional-test-full
 functional-test-full: go-bindata

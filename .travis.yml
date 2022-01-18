@@ -13,7 +13,7 @@ branches:
 
 addons:
   sonarcloud:
-    organization: "open-cluster-management"
+    organization: "stolostron"
     token:
       secure: "nL2zGRypfRRsPnl+l3ME6ZahDgNHTCQQav3brfxcFVag2hH8tNK0WUOZNYO4hgaSOPcQTOHVQNqnd/JpZ+uLp9TYN20i2SgEkIBxbSI48exFaW9zT4O/9bdD9nM5s/TRFA+8zMitXC5njEwl8X6LkHLczN6LgpnNZtG8L8VO44RG59BOB9+oaLD5U7K1DLBFgWxZcontRaRQuxYa+BEtGoxzTz3FYzjaFQVPs35hD1gw7+g7qN+TpLfEInw/aZJXE17BWUJZvVD+qxhPmJxZWvSpJi6Z5/aD6+NWqfy5CbdEBRj7fTILbH/Kj1OU083nxtwZql7XN33atGf3L5uXFeG+HADVLsL+rmLZwSMe96AbpZX4fVFKvCzrZFwL/MSbk2FYEJO4VmxtWzLIAVkdYPf2GTX/OHf2CO4Y4FmHgLdQQ7V9+ouG9dMS+R7ueTDeKWijIinmRPu2CZkPamdlpjEyCe2ZlKNW7a1rqRBdszhJtE7BMEqJOZOtZr6muN8IyEtiJ/cfFeYmctLAwqrEkQ8qhZOI7XBZ0Frc4L1hTZ3Ns100kyYwm34OY8EqDCn95x7zj2PNHfiG/Q3cMiGZXvm3m9V29buASsb4usenVn7shy40X/70MVBmbywQogNbux0Cp5OTLAUaCqCR0sv6zqYyw0tRvT/DzWwyC9m1m4w="
 
@@ -25,7 +25,7 @@ stages:
   - publish
 
 before_script:
-  #- git config --global url.git@github.com:open-cluster-management/.insteadOf https://github.com/open-cluster-management/
+  #- git config --global url.git@github.com:stolostron/.insteadOf https://github.com/stolostron/
   - make init
 
 jobs:
@@ -51,12 +51,6 @@ jobs:
     #     - export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}-e2e"
     #     - export COMPONENT_BUILD_COMMAND=${TRAVIS_BUILD_DIR}/build/build-e2e.sh 
     #     - ./build/travis.sh
-
-    - stage: unit-test
-      name: "Run unit tests"
-      script:
-        - if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then export COMPONENT_TAG_EXTENSION="-PR${TRAVIS_PULL_REQUEST}-${TRAVIS_COMMIT}"; fi; 
-        - make sonar/go
 
     - stage: functional-test
       name: "Run functional-test"
@@ -86,4 +80,4 @@ jobs:
       script:
         - make pipeline-manifest/update PIPELINE_MANIFEST_COMPONENT_SHA256=${TRAVIS_COMMIT} PIPELINE_MANIFEST_COMPONENT_REPO=${TRAVIS_REPO_SLUG} PIPELINE_MANIFEST_BRANCH=${TRAVIS_BRANCH}
     #   after_script:
-    #     - test "$TRAVIS_PULL_REQUEST" = "false" && test "$TRAVIS_TEST_RESULT" = "1" && ./build/slack-notification.sh || echo "Slack notification not sent"
+    #     - test "$TRAVIS_PULL_REQUEST" = "false" &&

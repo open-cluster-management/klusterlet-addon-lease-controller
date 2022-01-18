@@ -6,6 +6,7 @@
 //
 // Copyright (c) 2020 Red Hat, Inc.
 
+//go:build functional
 // +build functional
 
 package functional
@@ -17,7 +18,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	libgoclient "github.com/open-cluster-management/library-go/pkg/client"
+	libgoclient "github.com/stolostron/library-go/pkg/client"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"

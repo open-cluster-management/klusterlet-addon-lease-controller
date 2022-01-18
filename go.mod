@@ -1,4 +1,4 @@
-module github.com/open-cluster-management/klusterlet-addon-lease-controller
+module github.com/stolostron/klusterlet-addon-lease-controller
 
 go 1.15
 
@@ -6,8 +6,7 @@ require (
 	github.com/go-logr/logr v0.2.1
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.10.1
-	github.com/open-cluster-management/library-go v0.0.0-20200828173847-299c21e6c3fc
-	github.com/stretchr/testify v1.5.1 // indirect
+	github.com/stolostron/library-go v0.0.0-20220112062416-536980fdb526
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	k8s.io/api v0.19.0
 	k8s.io/apiextensions-apiserver v0.19.0 // indirect
