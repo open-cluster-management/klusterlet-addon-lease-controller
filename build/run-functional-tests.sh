@@ -39,11 +39,6 @@ if ! which kind > /dev/null; then
     chmod +x ./kind
     sudo mv ./kind /usr/local/bin/kind
 fi
-if ! which ginkgo > /dev/null; then
-    export GO111MODULE=off
-    echo "Installing ginkgo ..."
-    go get github.com/onsi/ginkgo/ginkgo
-fi
 if ! which gocovmerge > /dev/null; then
   echo "Installing gocovmerge..."
   go get -u github.com/wadey/gocovmerge
