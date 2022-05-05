@@ -5,7 +5,6 @@
 This controller runs on the managed-cluster as a side car of each addon controller and it creates a lease on the hub when the addon secret is created on the managed-cluster.
 
 The controller binary has the following parameters 
-
 ```
           command: 
           - klusterlet-addon-lease-controller
